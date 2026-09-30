@@ -1,56 +1,66 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Annotated, Any
 
-from .models import AgentSession, ChangeArtifact, VerificationReport
+from fastapi import Body, FastAPI, HTTPException, Query
 
+from .ingest import (
+    TraceFormat,
+    TraceFormatError,
+    session_from_payload,
+    sessions_from_payload,
+)
+from .verification import (
+    report_from_dict,
+    report_to_dict,
+    review_again,
+    summarize_session,
+)
 
-def summarize_session(session: AgentSession) -> VerificationReport:
-    """Create a concise human-readable verification artifact for a coding-agent session."""
-
-    actual_actions = [step.action for step in session.actual_steps]
-    divergence_points: list[str] = []
-
-    if session.planned_steps:
-        for planned in session.planned_steps:
-            if planned not in actual_actions:
-                divergence_points.append(f"Planned step not observed in execution: {planned}")
-
-    unexpected_changes: list[str] = []
-    review_hotspots: list[str] = []
-
-    files_changed = [
-        ChangeArtifact(
-            file_path="unknown",
-            status="modified",
-            summary="Placeholder artifact generated from trace.",
-            risk="medium",
-        )
-    ]
-
-    if divergence_points:
-        review_hotspots.append("Trajectory divergence")
-        unexpected_changes.extend(divergence_points)
-
-    if not review_hotspots:
-        review_hotspots.append("No obvious divergence detected")
-
-    confidence = 0.5
-    if not divergence_points:
-        confidence = 0.8
-
-    return VerificationReport(
-        requirement=session.requirement,
-        original_plan=session.planned_steps,
-        actual_actions=actual_actions,
-        divergence_points=divergence_points,
-        files_changed=files_changed,
-        unexpected_changes=unexpected_changes,
-        review_hotspots=review_hotspots,
-        verification_status="needs_review" if divergence_points else "likely_ok",
-        confidence=confidence,
-    )
+app = FastAPI(title="Agent Verification Engine")
 
 
-def summarize_sessions(sessions: Iterable[AgentSession]) -> list[VerificationReport]:
-    return [summarize_session(session) for session in sessions]
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/formats")
+def formats() -> dict[str, list[str]]:
+    return {"formats": ["generic", "nemo", "otel"]}
+
+
+@app.post("/analyze")
+def analyze(
+    payload: Annotated[Any, Body()],
+    source: Annotated[TraceFormat, Query()] = "auto",
+) -> dict[str, Any]:
+    try:
+        session = session_from_payload(payload, source)
+    except (TraceFormatError, KeyError, TypeError, ValueError) as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+    report = summarize_session(session)
+    response = report_to_dict(report)
+    if isinstance(payload, dict) and payload.get("previous_report") is not None:
+        response["review_again"] = review_again(report_from_dict(payload["previous_report"]), report)
+    return response
+
+
+@app.post("/batch")
+def batch(
+    payload: Annotated[Any, Body()],
+    source: Annotated[TraceFormat, Query()] = "auto",
+) -> dict[str, Any]:
+    try:
+        sessions = sessions_from_payload(payload, source)
+    except (TraceFormatError, KeyError, TypeError, ValueError) as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    reports = [report_to_dict(summarize_session(session)) for session in sessions]
+    return {"count": len(reports), "reports": reports}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("agent_verification_engine.app:app", host="0.0.0.0", port=8000, reload=True)

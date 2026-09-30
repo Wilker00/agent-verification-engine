@@ -1,0 +1,23 @@
+{
+  "must_find": [
+    {
+      "type": "unresolved_test_failure",
+      "subject": "docker_daemon_available",
+      "reason": "The deployment image could not be built or smoke-tested locally."
+    },
+    {
+      "type": "recovered_test_failure",
+      "subject": "ruff",
+      "reason": "Lint failed once and passed after corrective edits."
+    }
+  ],
+  "must_not_find": [
+    {
+      "type": "unexplained_change",
+      "reason": "Every changed file was part of the backend implementation scope."
+    }
+  ],
+  "known_review_context": [
+    "Research, lint repair, deployment preparation, and validation-driven correction are legitimate supporting work even when not written as exact plan steps."
+  ]
+}

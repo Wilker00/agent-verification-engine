@@ -1,75 +1,28 @@
-# Agent Verification Engine
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+.env.*
 
-Autonomous coding agent execution verification and debugging platform. This project compresses long agent runs into evidence-backed review artifacts so developers can understand what the agent did, where it deviated, and whether a change is safe to approve.
+# Build
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-## Mission
+# Editors
+.vscode/
+.idea/
+.DS_Store
 
-As coding agents work across longer sessions and more files, verification is becoming its own bottleneck. Developers need a way to answer four questions quickly:
-
-- What did the agent intend to do?
-- What did it actually do?
-- Where did the trajectory diverge from the plan?
-- What should a human review first before approving or rejecting the result?
-
-## NVIDIA-aligned stack
-
-This project is intentionally designed around the NVIDIA open-source agent ecosystem that best matches the problem space:
-
-- NeMo Agent Toolkit — orchestration and workflow execution
-- OpenShell — agent runtime and safety boundary
-- W&B Weave / OTel — execution tracing and telemetry
-- NVIDIA Skills — reusable agent capabilities
-- SkillSpector — validation and risk screening
-- NIM / TensorRT-LLM — optional inference layer for hosted model serving
-
-## Repository structure
-
-- `src/agent_verification_engine/` — Python package for trace modeling and verification logic
-- `docs/` — architecture and stack guidance
-- `examples/` — sample traces and future hackathon demos
-- `tests/` — validation for trace normalization and review report generation
-
-## Quick start
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -e .
-python -m agent_verification_engine
-```
-
-## Current MVP focus
-
-The initial implementation targets the following artifacts:
-
-1. Trajectory capture model
-2. Plan-vs-actual divergence analysis
-3. Diff and change-risk summary
-4. Review hotspots ranked by risk
-5. Verification report suitable for a developer review UI
-
-## Example output
-
-The platform will generate summary objects like:
-
-- `requirement`
-- `original_plan`
-- `actual_actions`
-- `divergence_points`
-- `files_changed`
-- `unexpected_changes`
-- `review_hotspots`
-- `verification_status`
-
-## Roadmap
-
-- v0.1: trace model + verification report
-- v0.2: CLI for sample session analysis
-- v0.3: FastAPI endpoint for processing workflow outputs
-- v0.4: UI dashboard for timeline and review hotspots
-- v0.5: NVIDIA NeMo integration and telemetry export
-
-## License
-
-MIT
+# Local runtime
+logs/
+*.log

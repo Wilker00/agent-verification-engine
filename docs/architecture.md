@@ -1,45 +1,26 @@
-[build-system]
-requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.build_meta"
+# Architecture
 
-[project]
-name = "agent-verification-engine"
-version = "0.1.0"
-description = "Evidence-backed verification and debugging platform for autonomous coding agents"
-readme = "README.md"
-requires-python = ">=3.10"
-authors = [{ name = "Wilker00" }]
-license = { text = "MIT" }
-classifiers = [
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Framework :: FastAPI",
-]
+## Goal
 
-dependencies = [
-  "fastapi>=0.110.0",
-  "uvicorn[standard]>=0.29.0",
-  "pydantic>=2.7.0",
-  "httpx>=0.27.0",
-]
+Turn an autonomous coding-agent run into a compact approval artifact that tells a developer what requires review and why.
 
-[project.optional-dependencies]
-agent = [
-  "nvidia-nat>=1.0.0",
-  "wandb>=0.16.0",
-  "opentelemetry-api>=1.25.0",
-]
+## Data flow
 
-dev = [
-  "pytest>=8.0.0",
-  "pytest-cov>=5.0.0",
-  "ruff>=0.5.0",
-]
+1. **Ingest** normalizes generic session JSON, NeMo workflow output, OTel spans, and attached OpenShell events into `AgentSession`.
+2. **Reconstruction** compares planned work with observed actions, file changes, and test attempts.
+3. **Verification** emits structured findings with severity, evidence, reason, review priority, and review status.
+4. **Presentation** exposes the same report through the CLI and FastAPI. IDE and web interfaces are deferred.
 
-[tool.setuptools]
-package-dir = {"" = "src"}
+## Core models
 
-[tool.setuptools.packages.find]
-where = ["src"]
+- `AgentSession`: requirement, planned steps and files, actual steps, changed files, and tests.
+- `VerificationFinding`: one reviewable judgment with supporting evidence.
+- `VerificationReport`: ordered findings plus compatibility summaries and checklist state.
+
+## Design constraints
+
+- Deterministic heuristics first; no uncalibrated model confidence.
+- Every hotspot must explain why it exists.
+- Integrations map into the core model and do not leak vendor trace formats into the report.
+- The report prioritizes approval decisions rather than replaying the raw trace.
+- Source adapters remain optional and do not import NeMo, OTel, or Nebius packages on the analysis path.
